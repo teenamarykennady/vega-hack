@@ -21,6 +21,7 @@ bool monitoring = false;
 float riskScore = 0;
 unsigned long lastUpdate = 0;
 unsigned long lidOpenStart = 0;
+unsigned long fakeTime = 0;
 bool lastTouchState = LOW;
 
 void setup() {
@@ -35,12 +36,12 @@ void setup() {
   lidServo.attach(SERVO_PIN);
   lidServo.write(0);
 
-  Serial.println("FoodShield Ready");
+  Serial.println("FoodShield READY");
 }
 
 void loop() {
 
-  // ===== TOUCH SENSOR BUTTON =====
+  // TOUCH SENSOR START / STOP
   bool touchState = digitalRead(TOUCH_PIN);
 
   if(touchState == HIGH && lastTouchState == LOW){
@@ -53,16 +54,13 @@ void loop() {
       Serial.println("SYSTEM STARTED");
       lidOpenStart = millis();
       digitalWrite(BUZZER, HIGH); delay(200); digitalWrite(BUZZER, LOW);
-
       digitalWrite(GREEN_LED, HIGH);
       digitalWrite(YELLOW_LED, LOW);
       digitalWrite(RED_LED, LOW);
-    }
-    else{
+    } else {
       Serial.println("SYSTEM STOPPED");
       lidServo.write(0);
       digitalWrite(BUZZER, LOW);
-
       digitalWrite(GREEN_LED, LOW);
       digitalWrite(YELLOW_LED, LOW);
       digitalWrite(RED_LED, LOW);
@@ -72,7 +70,7 @@ void loop() {
 
   if(!systemON) return;
 
-  // ===== RFID SIMULATION (press r) =====
+  // RFID SIMULATION (press r)
   if(!monitoring && Serial.available()){
     char c = Serial.read();
     if(c == 'r' || c == 'R'){
@@ -84,13 +82,18 @@ void loop() {
 
   if(!monitoring) return;
 
-  // ===== FAST DEMO TIMER (updates every 5 sec) =====
+  // UPDATE EVERY 5 SEC
   if(millis() - lastUpdate > 5000){
     lastUpdate = millis();
+    fakeTime += 5;
 
     int lightValue = analogRead(LDR);
 
-    Serial.print("Light Sensor: ");
+    Serial.print("Time Running: ");
+    Serial.print(fakeTime);
+    Serial.println(" sec");
+
+    Serial.print("Light Level: ");
     Serial.println(lightValue);
 
     Serial.print("Risk Score: ");
@@ -99,7 +102,7 @@ void loop() {
     riskScore += 15;
   }
 
-  // ===== LED + BUZZER STATES =====
+  // LED + BUZZER STATES
   if(riskScore < 30){
     digitalWrite(GREEN_LED, HIGH);
     digitalWrite(YELLOW_LED, LOW);
@@ -110,16 +113,16 @@ void loop() {
     digitalWrite(GREEN_LED, LOW);
     digitalWrite(YELLOW_LED, HIGH);
     digitalWrite(RED_LED, LOW);
-    digitalWrite(BUZZER, LOW);   // buzzer ON
+    digitalWrite(BUZZER, LOW);
   }
   else{
     digitalWrite(GREEN_LED, LOW);
     digitalWrite(YELLOW_LED, LOW);
     digitalWrite(RED_LED, HIGH);
-    digitalWrite(BUZZER, HIGH);   // buzzer ON (danger)
+    digitalWrite(BUZZER, HIGH);
   }
 
-  // ===== SERVO AUTO CLOSE AFTER 45 sec =====
+  // AUTO CLOSE LID AFTER 45 SEC
   if(millis() - lidOpenStart > 45000){
     lidServo.write(90);
   }
